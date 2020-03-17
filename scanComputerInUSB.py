@@ -1,5 +1,7 @@
+from time import strftime, localtime
 from openpyxl import load_workbook
 from datetime import datetime
+import docx2txt
 import olefile
 import getpass
 import pickle
@@ -30,21 +32,26 @@ def search(path: str):
 
         else:
 
+            st = os.stat(origin_path)
+
             name, extension = os.path.splitext(i)
 
-            if len(extension) > 0 and extension == ".hwp":
+            try:
 
-                try: data = olefile.OleFileIO(i).openstream('PrvText').read().decode('UTF-16')
+                if extension == ".hwp": data = olefile.OleFileIO(i).openstream('PrvText').read().decode('UTF-16')
 
-                except: pass
+                elif extension == ".xlsx": data = tuple(tuple(k.value for k in j) for j in load_workbook(i, data_only=True).active.rows)
 
-            elif len(extension) > 0 and extension == ".xlsx":
+                elif extension == ".docx": data = docx2txt.process(i)
 
-                data = tuple(tuple(k.value for k in j) for j in load_workbook(i, data_only=True).active.rows)
+                else: continue
 
-            else: continue
+            except OSError: continue
 
-            result.append({"PATH":path, "NAME":name, "EXTENSION":extension, "DATA":data})
+            dates = (strftime("%y.%m.%d", localtime(s)) for s in (st.st_ctime, st.st_mtime))
+
+            result.append({"PATH":origin_path, "NAME": i, "DATE_CREATED":next(dates),
+                           "DATE_MODIFIED":next(dates), "DATA":data})
 
     return result
 

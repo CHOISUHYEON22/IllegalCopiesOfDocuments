@@ -28,23 +28,27 @@ def question(ques: str, cond: tuple = ("Y", "N")):
 
 def data_text(data: dict):
 
-    text = f"\n총 자료 수 : {sum((len(v) for i, v in data.items() if i != 'WHEN'))}\nWHEN : {data['WHEN']}\n"
+    def design(d: str): return ("\n" * 2 if d == "-" else "") + d * 170 + "\n" * 2
 
-    editext = lambda t, i, isx: t + f"{i[0]} : {tabulate(i[1]) if isx and i[0] == 'DATA' else i[1]}"
+    def inclusion(text):
 
-    for k, v in tuple(data.items())[:-1]:
-
-        text += "=" * 100 + f"\n{k} | 자료 수 : {len(v)}\n" + "-" * 100 + "\n" * 2
+        text += design("=") + f"{k} | 자료 수 : {len(v)}"
 
         for j in v:
 
-            isx = False if j["EXTENSION"] == '.hwp' else True
+            text += design("-")
 
-            reduce(editext, (i for i in j.items()), text)
+            text = reduce(lambda t, i: t + f"{i[0]} : {i[1]}\n", (i for i in tuple(j.items())[:-1]), text)[:-2]
 
-            text += "\n"
+            text += design("-") + f"DATA :\n{tabulate(j['DATA']) if '.xls' in j['NAME'][-5:] else j['DATA']}\n"
 
-        text += "=" * 100 + "\n" * 3
+        text += design("=")
+
+        return text
+
+    text = f"\n총 자료 수 : {sum((len(v) for i, v in data.items() if i != 'WHEN'))}\nWHEN : {data['WHEN']}\n"
+
+    for k, v in tuple(data.items())[:-1]: text = inclusion(text)
 
     return text
 
@@ -56,12 +60,12 @@ if __name__ == "__main__":
 
     filename = listdir[-1] if question("openRecent") == "Y" else question("fileName", tuple(listdir))
 
-    with open(filename, "rb") as f: info = data_text(pickle.load(f))
+    with open(filename, "rb") as f: info = data_text(pickle.load(f)); print(info)
 
     os.chdir(origin_path)
 
     if question("wanToSave") == "Y":
 
-        with open(f".{'/result' if 'result' in os.listdir('.') else ''}/R{filename}", "w+t") as f: f.write(info)
+        with open(f".{'/result' if 'result' in os.listdir('.') else ''}/R{filename}", "w+t", encoding="utf-8") as f: f.write(info)
 
     input("PRESS ANY KEY TO EXIT. ")

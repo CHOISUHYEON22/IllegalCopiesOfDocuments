@@ -6,17 +6,19 @@ def setting_address():
 
         try:
 
-            address = input("ENTER ABSOLUTE LOCATION OF bin FOLDER : ").replace("\\", "/")
+            address = input("ENTER ABSOLUTE LOCATION OF bin FOLDER : ").replace("\\", "\\")
 
-            if address[3] != "/": address = address[:3] + "/" + address[3:]
+            if address[-3:] == "bin": break
 
-            os.chdir(address)
+            else: print("ERROR, THIS FOLDER IS NOT bin.\n")
 
-            if "bin" == os.getcwd()[-3:]: return address
+        except (FileNotFoundError, OSError): print("ERROR, INVALID LOCATION.\n")
 
-            else: print("ERROR, THIS FOLDER IS NOT bin.")
+    print()
 
-        except FileNotFoundError or OSError: print("ERROR, INVALID LOCATION.")
+    os.chdir(address)
+
+    return address
 
 
 if __name__ == "__main__":
