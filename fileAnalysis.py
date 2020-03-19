@@ -10,6 +10,7 @@ def question(ques: str, cond: tuple = ("Y", "N")):
     ques_dict = {
         "openRecent": "DO YOU WANT TO OPEN THE MOST RECENT FILE?\n[Y]es OR [N]o : ",
         "wanToSave": "DO YOU WANT TO SAVE THIS DATA?\n[Y]es OR [N]o : ",
+        "methodOption": "HOW DO YOU WANT TO WORK?\n[A]utomatic OR [M]anual : ",
         "fileName": "FILE NAME : "
     }
 
@@ -54,18 +55,22 @@ def data_text(data: dict):
 
 if __name__ == "__main__":
 
-    origin_path = os.path.abspath(".")
+    def write_info(n):
 
-    listdir = os.listdir(setting_address())
+        with open(n, "rb") as f: info = data_text(pickle.load(f))
 
-    filename = listdir[-1] if question("openRecent") == "Y" else question("fileName", tuple(listdir))
+        with open(f"{result_path}\\R{n}", "w+t", encoding="utf-8") as f: f.write(info)
 
-    with open(filename, "rb") as f: info = data_text(pickle.load(f)); print(info)
+    result_path, listdir, AorM = f"{os.getcwd()}\\result", setting_address(), question("methodOption", ("A", "M"))
 
-    os.chdir(origin_path)
+    if not os.path.exists(result_path): os.mkdir(result_path)
 
-    if question("wanToSave") == "Y":
+    if AorM == "A":
 
-        with open(f".{'/result' if 'result' in os.listdir('.') else ''}/R{filename}", "w+t", encoding="utf-8") as f: f.write(info)
+        for v in os.listdir(result_path): os.remove(f"{result_path}\\{v}")
+
+        for v in listdir: write_info(v)
+
+    else: write_info(listdir[-1] if question("openRecent") == "Y" else question("fileName", tuple(listdir)))
 
     input("PRESS ANY KEY TO EXIT. ")

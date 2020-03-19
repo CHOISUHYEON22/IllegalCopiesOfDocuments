@@ -1,6 +1,7 @@
 from time import strftime, localtime
 from openpyxl import load_workbook
 from datetime import datetime
+from glob import glob
 import docx2txt
 import olefile
 import getpass
@@ -10,55 +11,42 @@ import os
 
 def search(path: str):
 
-    global data
-
     result = list()
 
-    try: os.chdir(path)
+    def process():
 
-    except PermissionError: return
+        try:
 
-    for i in os.listdir(path):
+            if v == "*.docx": return docx2txt.process(u)
+            elif v == "*.hwp": return olefile.OleFileIO(u).openstream('PrvText').read().decode('UTF-16')
+            elif v == "*.xlsx": return tuple(tuple(k.value for k in j) for j in load_workbook(u, data_only=True).active.rows)
 
-        origin_path, sub_path = path, f"{path}/{i}"
+        except OSError: return
 
-        if os.path.isdir(sub_path):
+    for p, ds, fs in os.walk(path):
 
-            reserve = search(sub_path)
+        if not os.access(path, os.X_OK): return
 
-            if reserve: result.extend(reserve)
+        for v in ("*.hwp", "*.xlsx", "*.docx"):
 
-            os.chdir(origin_path)
+            for u in glob(os.path.join(p, v)):
 
-        else:
+                data = process()
 
-            st = os.stat(origin_path)
+                if not data: continue
 
-            name, extension = os.path.splitext(i)
+                st = os.stat(p)
 
-            try:
+                dates = (strftime("%y.%m.%d", localtime(s)) for s in (st.st_ctime, st.st_mtime))
 
-                if extension == ".hwp": data = olefile.OleFileIO(i).openstream('PrvText').read().decode('UTF-16')
-
-                elif extension == ".xlsx": data = tuple(tuple(k.value for k in j) for j in load_workbook(i, data_only=True).active.rows)
-
-                elif extension == ".docx": data = docx2txt.process(i)
-
-                else: continue
-
-            except OSError: continue
-
-            dates = (strftime("%y.%m.%d", localtime(s)) for s in (st.st_ctime, st.st_mtime))
-
-            result.append({"PATH":origin_path, "NAME": i, "DATE_CREATED":next(dates),
-                           "DATE_MODIFIED":next(dates), "DATA":data})
+                result.append({"PATH": p, "NAME": u, "DATE_CREATED": next(dates), "DATE_MODIFIED": next(dates), "DATA": data})
 
     return result
 
 
 if __name__ == '__main__':
 
-    origin, now, partial = os.getcwd() + "\\bin", datetime.now(), "C://Users/" + getpass.getuser()
+    origin, now, partial = "./bin", datetime.now(), "C://Users/" + getpass.getuser()
 
     if "OneDrive" not in os.listdir(partial): desktop, document = partial + "/Desktop", partial + "/Documents"
 
@@ -68,10 +56,6 @@ if __name__ == '__main__':
 
     info["WHEN"] = f"{str(now.year)[2:]}.{now.month:0>2}.{now.day:0>2}.{now.hour:0>2}:{now.minute:0>2}:{now.second:0>2}"
 
-    os.chdir(origin)
+    file_name = f"{int(os.listdir(origin)[-1][:3]) + 1 if os.stat(origin).st_size else 0:0>3}_&_{info['WHEN']}.txt".replace(":", ".")
 
-    current = os.listdir(".")
-
-    file_name = f"{int(current[-1][:3]) + 1 if len(current) else 0:0>3}_&_{info['WHEN']}.txt".replace(":", ".")
-
-    with open(file_name, "w+b") as f: pickle.dump(info, f)
+    with open(origin + f"\\{file_name}", "w+b") as f: pickle.dump(info, f)

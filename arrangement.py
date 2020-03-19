@@ -2,6 +2,7 @@ import os
 
 
 def setting_address():
+
     while True:
 
         try:
@@ -18,15 +19,15 @@ def setting_address():
 
     os.chdir(address)
 
-    return address
+    return os.listdir(address)
 
 
 if __name__ == "__main__":
 
-    process = {i[6:-4]: i for i in os.listdir(setting_address())}
+    process = {i[6:-4]: i for i in setting_address()}
 
     result = ((process[v], f"{i:0>3}" + process[v][3:]) for i, v in enumerate(sorted(list(process.keys()))))
 
-    for i in result: os.rename(next(i), next(i))
+    for i in result: os.rename(i[0], i[1])
 
     input("\nPRESS ANY KEY TO EXIT.\n")
