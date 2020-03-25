@@ -1,5 +1,6 @@
 from time import strftime, localtime
 from openpyxl import load_workbook
+from multiprocessing import Pool
 from datetime import datetime
 from glob import glob
 import docx2txt
@@ -18,7 +19,9 @@ def search(path: str):
         try:
 
             if v == "*.docx": return docx2txt.process(u)
+
             elif v == "*.hwp": return olefile.OleFileIO(u).openstream('PrvText').read().decode('UTF-16')
+
             elif v == "*.xlsx": return tuple(tuple(k.value for k in j) for j in load_workbook(u, data_only=True).active.rows)
 
         except OSError: return
@@ -46,13 +49,13 @@ def search(path: str):
 
 if __name__ == '__main__':
 
-    origin, now, partial = "./bin", datetime.now(), "C://Users/" + getpass.getuser()
+    origin, now, partial, pool = "./bin", datetime.now(), "C://Users/" + getpass.getuser(), Pool(processes=4)
 
     if "OneDrive" not in os.listdir(partial): desktop, document = partial + "/Desktop", partial + "/Documents"
 
     else: desktop, document = partial + "/OneDrive/바탕 화면", partial + "/OneDrive/문서"
 
-    info = {k: search(i) for i, k in (("D:/", "D_Drive"), (desktop, "DESKTOP"), (document, "DOCUMENT"))}
+    info = dict(zip(("D_Drive", "DESKTOP", "DOCUMENT"), pool.map(search, ("D:/", desktop, document))))
 
     info["WHEN"] = f"{str(now.year)[2:]}.{now.month:0>2}.{now.day:0>2}.{now.hour:0>2}:{now.minute:0>2}:{now.second:0>2}"
 
